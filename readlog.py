@@ -1,100 +1,68 @@
 #!/usr/bin/env python3
-import pandas as pd
-import re
-import sys
 from collections import Counter
- 
+import pandas as pd
+import sys
+
 
 class Log:
-    def __init__(self):
-        self.df = None
-        self.monitors = None
-        self.ap_version = None
-        self.car_model = None
-        self.tune = None
-        self.monitor_list = (
-                'Accel Position (%)', 
-                'Feedback Knock (degrees)', 
-                'Fine Knock Learn (degrees)', 
-                'Dyn Adv Mult (value)', 
-                'AF Sens 1 Ratio (AFR)', 
-                'Comm Fuel Final (AFR)',
-                'AF Correction 1 (%)',
-                'AF Learning 1 (%)',
-                )
+    def __init__(self, df):
+        self.df = df
+        self.filter_accel_pos()
 
-    def load(self, file):
-        self.df = pd.read_csv(file, encoding = "ISO-8859-1")
-        self.df = self.df[self.df['Accel Position (%)'] > 25] 
-        self.monitors = self.df.columns
-        self.log_info()
+    def carid(self):
+        va = (2015, 2016, 2017, 2018, 2019, 2020, 2021)
+        vb = (2022, 2023, 2024)
+        year = self.df.iloc[:,-1:].to_string().split('[')
+        for i in year[3]:
+            print(i)
 
-    def verify_monitors(self):
-        missing_monitors = [x for x in self.monitor_list if x not in self.df.columns]
-        return False if missing_monitors else True        
+    def af_correction(self):
+        pass
 
-    # need to fix regex
-    def log_info(self):
-        info = self.df.iloc[:,-1:].to_string()
-        info = re.findall(r'\[.*?\]', info)
-        self.ap_version = info[0]
-        self.car_model = info[1]
-        self.tune = info[2]
+    def af_learn(self):
+        pass
 
-    def af_actual(self):
-        self.df['AF Actual Correction (%)'] = self.df['AF Correction 1 (%)'] + self.df['AF Learning 1 (%)']
-        af_actual = self.df['AF Actual Correction (%)'].to_list()
-        if any(item > 18 for item in af_actual):
-            self.af_exceeded = True
-        elif any(item < -18 for item in af_actual):
-            self.af_exceeded = True
-        else:
-            self.af_exceeded = False
+    def af_ratio(self):
+        pass
 
-    def feedback_knock_count(self):
+    def filter_accel_pos(self):
+        self.df = self.df[self.df['Accel Position (%)'] > 25]
+        
+    def feedback_knock(self):
         fk = self.df['Feedback Knock (degrees)'].to_list()
         if all(item < -2 for item in fk):
             self.fk = Counter(fk)
         else:
-            self.fk = None
+            self.fk = False
 
-    def fineknock_learn_count(self):
+    def fineknock_learn(self):
         fkl = self.df['Fine Knock Learn (degrees)'].to_list()
         if all(item < -2 for item in fkl):
             self.fkl = Counter(fkl)
         else:
-            self.fkl = None
+            self.fkl = False
 
-    def dam_count(self):
+    def dam(self):
         dam = self.df['Dyn Adv Mult (value)'].to_list()
-        if dam[-1] < 1:
+        if all(item < 1 for item in dam):
             self.dam = Counter(dam)
         else:
-            self.dam = None
+            self.dam = False
 
     def review(self):
-        if self.verify_monitors() is True:
-            self.feedback_knock_count()
-            self.fineknock_learn_count()
-            self.dam_count()
-            self.af_actual()
-
-            if self.fk or self.fkl or self.dam is not None:
-                print(f'DAM: {self.dam}\nFeedback Knock: {self.fk}\nFine Knock Learn: {self.fkl}')
-            if self.af_exceeded is True:
-                print(f'AF correction exceeded threshold')
-            else:
-                print(f'No issues found')
-
+        self.feedback_knock()
+        self.fineknock_learn()
+        self.dam()
+        self.carid()
+        if self.fk or self.fkl or self.dam:
+            print(f'DAM: {self.dam}\nFeedback Knock: {self.fk}\nFine Knock Learn: {self.fkl}')
         else:
-            print(f'Verify the following monitors are enabled:')
-            for i in self.monitor_list:
-                print(i)
+            print(f'No issues found')
 
 
 if __name__ == "__main__":
-    file = sys.argv[1]
-    log = Log()
-    log.load(file)
+    #filename = sys.argv[1]
+    filename = "22-wrx.csv"
+    df = pd.read_csv(filename, encoding = "ISO-8859-1")
+    log = Log(df)
     log.review()
-    
