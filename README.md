@@ -1,5 +1,5 @@
 # log-reader
-Log reader for 2022+ Subaru WRX.
+Log reader for 2022+ Subaru WRX. Provides overall health of the engine, such as, engine air fuel corrections and knock detection.
 
 To run the tool:
 ```bash
