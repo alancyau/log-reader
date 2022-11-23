@@ -34,6 +34,7 @@ class Log:
         self.af_com = 'Comm Fuel Final (AFR)'
         self.af_corr = 'AF Correction 1 (%)'
         self.af_learn = 'AF Learning 1 (%)'
+        self.oil_temp = 'Oil Temp (F)'
         # The following monitors _ARE_NOT_ shared across models and need to be defined separately
         if 'wrx_va' in self.car:
             self.acc_pos = 'Accel. Position (%)'
@@ -111,6 +112,12 @@ class Log:
         dam_list = self.df[self.dam].to_list()
         end_dam = Counter(dam_list) if dam_list[-1] < 1 else None
         return end_dam
+    
+    def oil_temp_exceed(self) -> bool:
+        self.oil_temp_threshold = 240
+        oil_temps = self.df[self.dam].to_list()
+        oil_temp_exceeded = True if any(item > self.oil_temp_threshold for item in oil_temps) else False
+        return oil_temp_exceeded
 
     def review(self) -> list:
         fk = self.feedback_knock_count()
@@ -118,16 +125,19 @@ class Log:
         dam = self.end_log_dam()
         af = self.af_actual()
         mf = self.cyl_misfire()
+        oil = self.oil_temp_exceed()
         
         results = []
         results.append(self.car)
-    
+
         if fk or fkl or dam is not None:
             results.append(f'DAM: {self.dam}\nFeedback Knock: {self.fk}\nFine Knock Learn: {self.fkl}')
         if af:
             results.append(f'AF correction exceeded threshold')
         if True in mf:  
             results.append(f'Engine misfire detected')
+        if oil:
+           results.append(f'Engine oil exceeded {self.oil_temp_threshold}F')
         else:
             results.append(f'No issues found')
         return results
