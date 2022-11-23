@@ -3,13 +3,14 @@ import pandas as pd
 import re
 import sys
 from collections import Counter
+from typing import Union
 
 
 class Log:
     def __init__(self, file):
         self.load_csv(file)
 
-    def load_csv(self, file: str):
+    def load_csv(self, file: str) -> None:
         self.df = pd.read_csv(file, encoding = "ISO-8859-1")
         self.monitors = self.df.columns
         self.log_info = self.get_log_info()
@@ -27,7 +28,7 @@ class Log:
         log_info['Tune'] = info[2][1:-1]
         return log_info
         
-    def define_monitors(self):
+    def define_monitors(self) -> None:
         if 'wrx_va' in self.car:
             self.acc_pos = 'Accel. Position (%)'
             self.fk = 'Feedback Knock (°)'
@@ -76,47 +77,38 @@ class Log:
         else:
             return af_exceeded
 
-    def feedback_knock_count(self):
+    def feedback_knock_count(self) -> Union[bool,Counter]:
         fk = self.df[self.fk].to_list()
-        if all(item < -2 for item in fk):
-            fk_count = Counter(fk)
-        else:
-            fk_count = None
+        fk_count = Counter(fk) if all(item < -2 for item in fk) else None
         return fk_count
 
-    def fineknock_learn_count(self):
+    def fineknock_learn_count(self) -> Union[bool,Counter]:
         fkl = self.df[self.fkl].to_list()
-        if all(item < -2 for item in fkl):
-            fkl_count = Counter(fkl)
-        else:
-            fkl_count = None
+        fkl_count = Counter(fkl) if all(item < -2 for item in fkl) else None
         return fkl_count
 
-    def end_log_dam(self):
-        dam = self.df[self.dam].to_list()
-        if dam[-1] < 1:
-            dam = Counter(dam)
-        else:
-            dam = None
-        return dam
+    def end_log_dam(self) -> Union[bool,Counter]:
+        dam_list = self.df[self.dam].to_list()
+        end_dam = Counter(dam_list) if dam_list[-1] < 1 else None
+        return end_dam
 
-    def review(self):
+    def review(self) -> list:
         fk = self.feedback_knock_count()
         fkl = self.fineknock_learn_count()
         dam = self.end_log_dam()
         af = self.af_actual()
-
+        
+        results = []
         if fk or fkl or dam is not None:
-            print(f'DAM: {self.dam}\nFeedback Knock: {self.fk}\nFine Knock Learn: {self.fkl}')
+            results.append(f'DAM: {self.dam}\nFeedback Knock: {self.fk}\nFine Knock Learn: {self.fkl}')
         if af:
-            print(f'AF correction exceeded threshold')
+            results.append(f'AF correction exceeded threshold')
         else:
-            print(f'No issues found')
+            results.append(f'No issues found')
+        return results
 
 
 if __name__ == "__main__":
-    #file = sys.argv[1]
-    file = '15-wrx.csv'
+    file = sys.argv[1]
     log = Log(file)
-    log.review()
-    
+    print(log.review())
