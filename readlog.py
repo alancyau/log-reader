@@ -12,15 +12,7 @@ class Log:
         self.ap_version = None
         self.car_model = None
         self.tune = None
-
-    def load(self, file):
-        self.df = pd.read_csv(file, encoding = "ISO-8859-1")
-        self.df = self.df[self.df['Accel Position (%)'] > 25] 
-        self.monitors = self.df.columns
-        self.log_info()
-
-    def verify_monitors(self):
-        monitor_list = (
+        self.monitor_list = (
                 'Accel Position (%)', 
                 'Feedback Knock (degrees)', 
                 'Fine Knock Learn (degrees)', 
@@ -30,7 +22,15 @@ class Log:
                 'AF Correction 1 (%)',
                 'AF Learning 1 (%)',
                 )
-        missing_monitors = [x for x in monitor_list if x not in self.df.columns]
+
+    def load(self, file):
+        self.df = pd.read_csv(file, encoding = "ISO-8859-1")
+        self.df = self.df[self.df['Accel Position (%)'] > 25] 
+        self.monitors = self.df.columns
+        self.log_info()
+
+    def verify_monitors(self):
+        missing_monitors = [x for x in self.monitor_list if x not in self.df.columns]
         return False if missing_monitors else True        
 
     # need to fix regex
@@ -78,13 +78,18 @@ class Log:
             self.fineknock_learn_count()
             self.dam_count()
             self.af_actual()
-        
-        if self.fk or self.fkl or self.dam is not None:
-            print(f'DAM: {self.dam}\nFeedback Knock: {self.fk}\nFine Knock Learn: {self.fkl}')
-        if self.af_exceeded is True:
-            print(f'AF correction exceeded threshold')
+
+            if self.fk or self.fkl or self.dam is not None:
+                print(f'DAM: {self.dam}\nFeedback Knock: {self.fk}\nFine Knock Learn: {self.fkl}')
+            if self.af_exceeded is True:
+                print(f'AF correction exceeded threshold')
+            else:
+                print(f'No issues found')
+
         else:
-            print(f'No issues found')
+            print(f'Verify the following monitors are enabled:')
+            for i in self.monitor_list:
+                print(i)
 
 
 if __name__ == "__main__":
