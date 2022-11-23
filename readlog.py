@@ -29,28 +29,48 @@ class Log:
         return log_info
         
     def define_monitors(self) -> None:
+        # The following monitors are shared across models
+        self.af_ratio = 'AF Sens 1 Ratio (AFR)'
+        self.af_com = 'Comm Fuel Final (AFR)'
+        self.af_corr = 'AF Correction 1 (%)'
+        self.af_learn = 'AF Learning 1 (%)'
+        # The following monitors _ARE_NOT_ shared across models and need to be defined separately
         if 'wrx_va' in self.car:
             self.acc_pos = 'Accel. Position (%)'
             self.fk = 'Feedback Knock (°)'
             self.fkl = 'Fine Knock Learn (°)'
             self.dam = 'Dyn. Adv. Mult (DAM)'
-            self.af_ratio = 'AF Sens 1 Ratio (AFR)'
-            self.af_com = 'Comm Fuel Final (AFR)'
-            self.af_corr = 'AF Correction 1 (%)'
-            self.af_learn = 'AF Learning 1 (%)'
+            self.cyl1 = 'Roughness Cyl 1 (count)'
+            self.cyl2 = 'Roughness Cyl 2 (count)'
+            self.cyl3 = 'Roughness Cyl 3 (count)'
+            self.cyl4 = 'Roughness Cyl 4 (count)'
         elif 'wrx_vb' in self.car:
             self.acc_pos = 'Accel Position (%)'
             self.fk = 'Feedback Knock (degrees)'
             self.fkl = 'Fine Knock Learn (degrees)'
             self.dam = 'Dyn Adv Mult (value)'
-            self.af_ratio = 'AF Sens 1 Ratio (AFR)'
-            self.af_com = 'Comm Fuel Final (AFR)'
-            self.af_corr = 'AF Correction 1 (%)'
-            self.af_learn = 'AF Learning 1 (%)'
+            self.cyl1 = 'Roughness Cyl 1 (misfire count)'
+            self.cyl2 = 'Roughness Cyl 2 (misfire count)'
+            self.cyl3 = 'Roughness Cyl 3 (misfire count)'
+            self.cyl4 = 'Roughness Cyl 4 (misfire count)'
     
     def verify_monitors(self):
         # Check if defined monitors exist in data log.
         pass
+
+    def boost_target(self):
+        pass
+
+    def cyl_misfire(self) -> tuple:
+        cyl1 = self.df[self.cyl1].to_list()
+        mf1 = True if any(item > 0 for item in cyl1) else False
+        cyl2 = self.df[self.cyl2].to_list()
+        mf2 = True if any(item > 0 for item in cyl2) else False
+        cyl3 = self.df[self.cyl3].to_list()
+        mf3 = True if any(item > 0 for item in cyl3) else False
+        cyl4 = self.df[self.cyl4].to_list()
+        mf4 = True if any(item > 0 for item in cyl4) else False
+        return mf1, mf2, mf3, mf4
 
     def id_car(self) -> str:
         # va and vb models determined by car year.
@@ -60,7 +80,7 @@ class Log:
         if year in va_years:
             car = 'wrx_va'
         elif year in vb_years:
-            car = 'wrx_va'
+            car = 'wrx_vb'
         else:
             print('Unable to determine car model from log.')
             sys.exit()
@@ -97,12 +117,17 @@ class Log:
         fkl = self.fineknock_learn_count()
         dam = self.end_log_dam()
         af = self.af_actual()
+        mf = self.cyl_misfire()
         
         results = []
+        results.append(self.car)
+    
         if fk or fkl or dam is not None:
             results.append(f'DAM: {self.dam}\nFeedback Knock: {self.fk}\nFine Knock Learn: {self.fkl}')
         if af:
             results.append(f'AF correction exceeded threshold')
+        if True in mf:  
+            results.append(f'Engine misfire detected')
         else:
             results.append(f'No issues found')
         return results
@@ -111,4 +136,6 @@ class Log:
 if __name__ == "__main__":
     file = sys.argv[1]
     log = Log(file)
-    print(log.review())
+    output = log.review()
+    for i in output:
+        print(i)
