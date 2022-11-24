@@ -3,42 +3,42 @@ Log reader for 2015+ Subaru WRX. Supports both VA and VB platforms. The tool rev
 
 The following monitors will need to be enabled on the Cobb Accessport:
 
-- AF Correction 1 (%)
-- AF Learning 1 (%)
-- AF Sens 1 Ratio (AFR)
-- AVCS Exh Left (retard (degrees))
-- AVCS Exh Right (retard (degrees))
-- AVCS In Left (advance (degrees))
-- AVCS In Right (advance (degrees))
-- Accel Position (%)
-- Baro Pressure (psi)
-- Boost (psi)
-- Calculated Load (g/rev)
-- Closed Loop Sw (status)
-- Comm Fuel Final (AFR)
-- Coolant Temp (F)
-- Dyn Adv Mult (value)
-- Feedback Knock (degrees)
-- Fine Knock Learn (degrees)
-- Fuel Pressure (psi)
-- Gear Position (gear)
-- Ignition Timing (degrees)
-- Inj Duty Cycle (%)
-- Intake Temp (F)
-- Intake Temp Manifold (F)
-- Limits Boost Table Base Rel SL (psi)
-- MAF Freq (kHz)
-- Oil Temp (F)
-- RPM (RPM)
-- Req Torque (N-m)
-- Roughness Cyl 1 (misfire count)
-- Roughness Cyl 2 (misfire count)
-- Roughness Cyl 3 (misfire count)
-- Roughness Cyl 4 (misfire count)
-- TGV Map Ratio (multiplier)
-- Target Boost Final Rel SL (psi)
-- Throttle Pos (%)
-- Wastegate Pos Actual (mm)
+- AF Correction 1
+- AF Learning 1
+- AF Sens 1 Ratio
+- AVCS Exh Left 
+- AVCS Exh Right
+- AVCS In Left 
+- AVCS In Right
+- Accel Position
+- Baro Pressure
+- Boost
+- Calculated Load
+- Closed Loop Sw
+- Comm Fuel Final
+- Coolant Temp
+- Dyn Adv Mult
+- Feedback Knock
+- Fine Knock Learn
+- Fuel Pressure
+- Gear Position
+- Ignition Timing
+- Inj Duty Cycle
+- Intake Temp
+- Intake Temp Manifold
+- Limits Boost Table Base Rel SL
+- MAF Freq or MAF Volt
+- Oil Temp
+- RPM
+- Req Torque
+- Roughness Cyl 1
+- Roughness Cyl 2
+- Roughness Cyl 3
+- Roughness Cyl 4
+- TGV Map Ratio
+- Target Boost Final Rel SL
+- Throttle Pos
+- Wastegate Pos Actual or Wastegate Duty
 
 To run the tool:
 ```bash
