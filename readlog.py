@@ -17,7 +17,7 @@ class Log:
         self.car = self.id_car()
         self.define_monitors()
         # To remove noise in log, filter data when acc_pos > 25%.
-        self.df = self.df[self.df[self.acc_pos] > 25] 
+        self.df = self.df[self.df[self.mon_accpos] > 25] 
 
     def get_log_info(self) -> dict:
         info = self.df.iloc[:,-1:].to_string()
@@ -30,30 +30,30 @@ class Log:
         
     def define_monitors(self) -> None:
         # The following monitors are shared across models
-        self.af_ratio = 'AF Sens 1 Ratio (AFR)'
-        self.af_com = 'Comm Fuel Final (AFR)'
-        self.af_corr = 'AF Correction 1 (%)'
-        self.af_learn = 'AF Learning 1 (%)'
-        self.oil_temp = 'Oil Temp (F)'
+        self.mon_afratio = 'AF Sens 1 Ratio (AFR)'
+        self.mon_afcom = 'Comm Fuel Final (AFR)'
+        self.mon_afcorr = 'AF Correction 1 (%)'
+        self.mon_aflearn = 'AF Learning 1 (%)'
+        self.mon_oiltemp = 'Oil Temp (F)'
         # The following monitors _ARE_NOT_ shared across models and need to be defined separately
         if 'wrx_va' in self.car:
-            self.acc_pos = 'Accel. Position (%)'
-            self.fk = 'Feedback Knock (°)'
-            self.fkl = 'Fine Knock Learn (°)'
-            self.dam = 'Dyn. Adv. Mult (DAM)'
-            self.cyl1 = 'Roughness Cyl 1 (count)'
-            self.cyl2 = 'Roughness Cyl 2 (count)'
-            self.cyl3 = 'Roughness Cyl 3 (count)'
-            self.cyl4 = 'Roughness Cyl 4 (count)'
+            self.mon_accpos = 'Accel. Position (%)'
+            self.mon_fk = 'Feedback Knock (°)'
+            self.mon_fkl = 'Fine Knock Learn (°)'
+            self.mon_dam = 'Dyn. Adv. Mult (DAM)'
+            self.mon_cyl1 = 'Roughness Cyl 1 (count)'
+            self.mon_cyl2 = 'Roughness Cyl 2 (count)'
+            self.mon_cyl3 = 'Roughness Cyl 3 (count)'
+            self.mon_cyl4 = 'Roughness Cyl 4 (count)'
         elif 'wrx_vb' in self.car:
-            self.acc_pos = 'Accel Position (%)'
-            self.fk = 'Feedback Knock (degrees)'
-            self.fkl = 'Fine Knock Learn (degrees)'
-            self.dam = 'Dyn Adv Mult (value)'
-            self.cyl1 = 'Roughness Cyl 1 (misfire count)'
-            self.cyl2 = 'Roughness Cyl 2 (misfire count)'
-            self.cyl3 = 'Roughness Cyl 3 (misfire count)'
-            self.cyl4 = 'Roughness Cyl 4 (misfire count)'
+            self.mon_accpos = 'Accel Position (%)'
+            self.mon_fk = 'Feedback Knock (degrees)'
+            self.mon_fkl = 'Fine Knock Learn (degrees)'
+            self.mon_dam = 'Dyn Adv Mult (value)'
+            self.mon_cyl1 = 'Roughness Cyl 1 (misfire count)'
+            self.mon_cyl2 = 'Roughness Cyl 2 (misfire count)'
+            self.mon_cyl3 = 'Roughness Cyl 3 (misfire count)'
+            self.mon_cyl4 = 'Roughness Cyl 4 (misfire count)'
     
     def verify_monitors(self):
         # Check if defined monitors exist in data log.
@@ -63,13 +63,13 @@ class Log:
         pass
 
     def cyl_misfire(self) -> tuple:
-        cyl1 = self.df[self.cyl1].to_list()
+        cyl1 = self.df[self.mon_cyl1].to_list()
         mf1 = True if any(item > 0 for item in cyl1) else False
-        cyl2 = self.df[self.cyl2].to_list()
+        cyl2 = self.df[self.mon_cyl2].to_list()
         mf2 = True if any(item > 0 for item in cyl2) else False
-        cyl3 = self.df[self.cyl3].to_list()
+        cyl3 = self.df[self.mon_cyl3].to_list()
         mf3 = True if any(item > 0 for item in cyl3) else False
-        cyl4 = self.df[self.cyl4].to_list()
+        cyl4 = self.df[self.mon_cyl4].to_list()
         mf4 = True if any(item > 0 for item in cyl4) else False
         return mf1, mf2, mf3, mf4
 
@@ -88,7 +88,7 @@ class Log:
         return car
 
     def af_actual(self) -> bool:
-        self.df['AF Actual Correction (%)'] = self.df[self.af_corr] + self.df[self.af_learn]
+        self.df['AF Actual Correction (%)'] = self.df[self.mon_afcorr] + self.df[self.mon_aflearn]
         af_actual = self.df['AF Actual Correction (%)'].to_list()
         af_exceeded = False
         if any(item > 18 for item in af_actual):
@@ -99,23 +99,23 @@ class Log:
             return af_exceeded
 
     def feedback_knock_count(self) -> Union[bool,Counter]:
-        fk = self.df[self.fk].to_list()
+        fk = self.df[self.mon_fk].to_list()
         fk_count = Counter(fk) if all(item < -2 for item in fk) else None
         return fk_count
 
     def fineknock_learn_count(self) -> Union[bool,Counter]:
-        fkl = self.df[self.fkl].to_list()
+        fkl = self.df[self.mon_fkl].to_list()
         fkl_count = Counter(fkl) if all(item < -2 for item in fkl) else None
         return fkl_count
 
     def end_log_dam(self) -> Union[bool,Counter]:
-        dam_list = self.df[self.dam].to_list()
+        dam_list = self.df[self.mon_dam].to_list()
         end_dam = Counter(dam_list) if dam_list[-1] < 1 else None
         return end_dam
     
     def oil_temp_exceed(self) -> bool:
         self.oil_temp_threshold = 240
-        oil_temps = self.df[self.dam].to_list()
+        oil_temps = self.df[self.mon_oiltemp].to_list()
         oil_temp_exceeded = True if any(item > self.oil_temp_threshold for item in oil_temps) else False
         return oil_temp_exceeded
 
@@ -131,7 +131,7 @@ class Log:
         results.append(self.car)
 
         if fk or fkl or dam is not None:
-            results.append(f'DAM: {self.dam}\nFeedback Knock: {self.fk}\nFine Knock Learn: {self.fkl}')
+            results.append(f'DAM: {dam}\nFeedback Knock: {fk}\nFine Knock Learn: {fkl}')
         if af:
             results.append(f'AF correction exceeded threshold')
         if True in mf:  
