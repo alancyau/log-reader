@@ -3,92 +3,116 @@ import pandas as pd
 import re
 import sys
 from collections import Counter
+from dataclasses import dataclass
 from typing import Union
 
 
-class Log:
-    def __init__(self, file):
-        self.load_csv(file)
+# Initial log filters
+CLOSED_LOOP = 1  # Closed loop enabled is 1. Closed loop disabled is 0.
+ACC_POS = 25  # In percent
 
-    def load_csv(self, file: str) -> None:
-        self.df = pd.read_csv(file, encoding = "ISO-8859-1")
-        self.monitors = self.df.columns
-        self.log_info = self.get_log_info()
-        self.car = self.id_car()
-        self.define_monitors()
-        # To remove noise in log, filter data when acc_pos > 25%.
-        self.df = self.df[self.df[self.mon_accpos] > 25] 
+# Monitor condition variables
+FK_TRESHOLD = -2  # In degrees. The more negative, the more timing retarded.
+FKL_THRESHOLD = -2  # In degrees. The more negative, the more timing retarded.
+DAM_TRESHOLD = 1
+OIL_TEMP_TRESHOLD = 250  # In Fahrenheit
 
-    def get_log_info(self) -> dict:
-        info = self.df.iloc[:,-1:].to_string()
-        info = re.findall(r'\[.*?\]', info)
-        log_info = {}
-        log_info['AP Version'] = info[0][1:-1]
-        log_info['Car'] = info[1][1:-1]
-        log_info['Tune'] = info[2][1:-1]
-        return log_info
         
-    def define_monitors(self) -> None:
-        # The following monitors are shared across models
-        self.mon_afratio = 'AF Sens 1 Ratio (AFR)'
-        self.mon_afcom = 'Comm Fuel Final (AFR)'
-        self.mon_afcorr = 'AF Correction 1 (%)'
-        self.mon_aflearn = 'AF Learning 1 (%)'
-        self.mon_oiltemp = 'Oil Temp (F)'
-        # The following monitors _ARE_NOT_ shared across models and need to be defined separately
-        if 'wrx_va' in self.car:
-            self.mon_accpos = 'Accel. Position (%)'
-            self.mon_fk = 'Feedback Knock (°)'
-            self.mon_fkl = 'Fine Knock Learn (°)'
-            self.mon_dam = 'Dyn. Adv. Mult (DAM)'
-            self.mon_cyl1 = 'Roughness Cyl 1 (count)'
-            self.mon_cyl2 = 'Roughness Cyl 2 (count)'
-            self.mon_cyl3 = 'Roughness Cyl 3 (count)'
-            self.mon_cyl4 = 'Roughness Cyl 4 (count)'
-        elif 'wrx_vb' in self.car:
-            self.mon_accpos = 'Accel Position (%)'
-            self.mon_fk = 'Feedback Knock (degrees)'
-            self.mon_fkl = 'Fine Knock Learn (degrees)'
-            self.mon_dam = 'Dyn Adv Mult (value)'
-            self.mon_cyl1 = 'Roughness Cyl 1 (misfire count)'
-            self.mon_cyl2 = 'Roughness Cyl 2 (misfire count)'
-            self.mon_cyl3 = 'Roughness Cyl 3 (misfire count)'
-            self.mon_cyl4 = 'Roughness Cyl 4 (misfire count)'
+def load_csv(file: str) -> pd.DataFrame:
+    df = pd.read_csv(file, encoding = "ISO-8859-1")
+    return df
+
+
+def apply_global_filters(df: pd.DataFrame, monitors) -> pd.DataFrame:
+    df_filtered = df[df[monitors.acc_pos] > ACC_POS]
+   # df_filtered = df[df[monitors.closed_loop] == CLOSED_LOOP]
+    return df_filtered
+
     
-    def verify_monitors(self):
-        # Check if defined monitors exist in data log.
+def verify_log_monitors(df: pd.DataFrame) -> list:
+    df_columns = df.columns.to_list()
+    monitor_list = (
+            # Monitors shared across all Subarus
+            'AF Sens 1 Ratio (AFR)',
+            'Comm Fuel Final (AFR)',
+            'AF Correction 1 (%)',
+            'AF Learning 1 (%)',
+            'Oil Temp (F)',
+            
+            # VA platform specific monitor names
+            'Accel. Position (%)', 
+            'Feedback Knock (°)', 
+            'Fine Knock Learn (°)', 
+            'Dyn. Adv. Mult (DAM)', 
+            'Roughness Cyl 1 (count)', 
+            'Roughness Cyl 2 (count)', 
+            'Roughness Cyl 3 (count)', 
+            'Roughness Cyl 4 (count)', 
+            'Closed Loop Sw. (on/off)',
+            
+            # VB platform specific monitor names
+            'Accel Position (%)',
+            'Feedback Knock (degrees)',
+            'Fine Knock Learn (degrees)',    
+            'Dyn Adv Mult (value)',
+            'Roughness Cyl 1 (misfire count)',
+            'Roughness Cyl 2 (misfire count)',
+            'Roughness Cyl 3 (misfire count)',
+            'Roughness Cyl 4 (misfire count)',
+            'Closed Loop Sw (status)',
+    )
+    monitors = [x for x in monitor_list if x in df_columns]
+    return monitors
+
+
+@dataclass
+class Monitors:
+    af_ratio: str
+    af_comm: str
+    af_corr: str
+    af_learn: str
+    oil_temp: str
+    acc_pos: str
+    fk: str
+    fkl: str
+    dam: str
+    cyl1_rough: str
+    cyl2_rough: str
+    cyl3_rough: str
+    cyl4_rough: str
+    closed_loop: str
+
+    
+class MonitorConditions:
+    def __init__(self, df: pd.DataFrame, monitors) -> None:
+        self.df = df
+        self.mon = monitors
+        self.status_cyl_misfire = self.cylinder_misfire()
+        self.status_af_exceed = self.af_correct_exceed()
+        self.status_fk = self.feedback_knock()
+        self.status_fkl = self.fineknock_learn()
+        self.status_dam = self.dam_exceed()
+        self.status_oil_temp = self.oil_temp_exceed()
+
+    def af_command_vs_actual(self):
         pass
 
-    def boost_target(self):
+    def boost_command_vs_actual(self):
         pass
 
-    def cyl_misfire(self) -> tuple:
-        cyl1 = self.df[self.mon_cyl1].to_list()
+    def cylinder_misfire(self) -> tuple:
+        cyl1 = self.df[self.mon.cyl1_rough].to_list()
         mf1 = True if any(item > 0 for item in cyl1) else False
-        cyl2 = self.df[self.mon_cyl2].to_list()
+        cyl2 = self.df[self.mon.cyl2_rough].to_list()
         mf2 = True if any(item > 0 for item in cyl2) else False
-        cyl3 = self.df[self.mon_cyl3].to_list()
+        cyl3 = self.df[self.mon.cyl3_rough].to_list()
         mf3 = True if any(item > 0 for item in cyl3) else False
-        cyl4 = self.df[self.mon_cyl4].to_list()
+        cyl4 = self.df[self.mon.cyl4_rough].to_list()
         mf4 = True if any(item > 0 for item in cyl4) else False
         return mf1, mf2, mf3, mf4
 
-    def id_car(self) -> str:
-        # va and vb models determined by car year.
-        va_years = [2015, 2016, 2017, 2018, 2019, 2020, 2021]
-        vb_years = [2022, 2023, 2024]
-        year = int(self.log_info['Car'].split()[0])
-        if year in va_years:
-            car = 'wrx_va'
-        elif year in vb_years:
-            car = 'wrx_vb'
-        else:
-            print('Unable to determine car model from log.')
-            sys.exit()
-        return car
-
-    def af_actual(self) -> bool:
-        self.df['AF Actual Correction (%)'] = self.df[self.mon_afcorr] + self.df[self.mon_aflearn]
+    def af_correct_exceed(self) -> bool:
+        self.df['AF Actual Correction (%)'] = self.df[self.mon.af_corr] + self.df[self.mon.af_learn]
         af_actual = self.df['AF Actual Correction (%)'].to_list()
         af_exceeded = False
         if any(item > 18 for item in af_actual):
@@ -98,54 +122,43 @@ class Log:
         else:
             return af_exceeded
 
-    def feedback_knock_count(self) -> Union[bool,Counter]:
-        fk = self.df[self.mon_fk].to_list()
-        fk_count = Counter(fk) if all(item < -2 for item in fk) else None
+    def feedback_knock(self) -> Union[bool,Counter]:
+        fk = self.df[self.mon.fk].to_list()
+        fk_count = Counter(fk) if all(item < FK_TRESHOLD for item in fk) else None
         return fk_count
 
-    def fineknock_learn_count(self) -> Union[bool,Counter]:
-        fkl = self.df[self.mon_fkl].to_list()
-        fkl_count = Counter(fkl) if all(item < -2 for item in fkl) else None
+    def fineknock_learn(self) -> Union[bool,Counter]:
+        fkl = self.df[self.mon.fkl].to_list()
+        fkl_count = Counter(fkl) if all(item < FKL_THRESHOLD for item in fkl) else None
         return fkl_count
 
-    def end_log_dam(self) -> Union[bool,Counter]:
-        dam_list = self.df[self.mon_dam].to_list()
-        end_dam = Counter(dam_list) if dam_list[-1] < 1 else None
+    def dam_exceed(self) -> Union[bool,Counter]:
+        dam_list = self.df[self.mon.dam].to_list()
+        end_dam = Counter(dam_list) if dam_list[-1] < DAM_TRESHOLD else None
         return end_dam
     
     def oil_temp_exceed(self) -> bool:
-        self.oil_temp_threshold = 240
-        oil_temps = self.df[self.mon_oiltemp].to_list()
-        oil_temp_exceeded = True if any(item > self.oil_temp_threshold for item in oil_temps) else False
+        oil_temps = self.df[self.mon.oil_temp].to_list()
+        oil_temp_exceeded = True if any(item >= OIL_TEMP_TRESHOLD for item in oil_temps) else False
         return oil_temp_exceeded
 
-    def review(self) -> list:
-        fk = self.feedback_knock_count()
-        fkl = self.fineknock_learn_count()
-        dam = self.end_log_dam()
-        af = self.af_actual()
-        mf = self.cyl_misfire()
-        oil = self.oil_temp_exceed()
-        
-        results = []
-        results.append(self.car)
 
-        if fk or fkl or dam is not None:
-            results.append(f'DAM: {dam}\nFeedback Knock: {fk}\nFine Knock Learn: {fkl}')
-        if af:
-            results.append(f'AF correction exceeded threshold')
-        if True in mf:  
-            results.append(f'Engine misfire detected')
-        if oil:
-           results.append(f'Engine oil exceeded {self.oil_temp_threshold}F')
-        else:
-            results.append(f'No issues found')
-        return results
+def main() -> None:
+    # file = sys.argv[1]
+    df = load_csv('datalog20.csv')
+    verified_monitors = verify_log_monitors(df)
+    monitors = Monitors(*verified_monitors)
+    df = apply_global_filters(df, monitors)
+    conditions = MonitorConditions(df, monitors)
+    
+    for status in conditions.status_cyl_misfire: 
+        if status: print('Misfire detected')
+    if conditions.status_fk: print('Feedback knock detected')
+    if conditions.status_fkl: print('Fineknock Learn detected')
+    if conditions.status_af_exceed: print('AF correction exceeded')
+    if conditions.status_dam: print(f'DAM dropped below {DAM_TRESHOLD}')
+    if conditions.status_oil_temp: print(f'Oil temp exceeded {OIL_TEMP_TRESHOLD}')
 
-
+    
 if __name__ == "__main__":
-    file = sys.argv[1]
-    log = Log(file)
-    output = log.review()
-    for i in output:
-        print(i)
+    main()
