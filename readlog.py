@@ -144,8 +144,8 @@ class MonitorConditions:
 
 
 def main() -> None:
-    # file = sys.argv[1]
-    df = load_csv('datalog20.csv')
+    file = sys.argv[1]
+    df = load_csv(file)
     verified_monitors = verify_log_monitors(df)
     monitors = Monitors(*verified_monitors)
     df = apply_global_filters(df, monitors)
