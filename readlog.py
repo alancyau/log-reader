@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import pandas as pd
-import re
 import sys
 from collections import Counter
 from dataclasses import dataclass
