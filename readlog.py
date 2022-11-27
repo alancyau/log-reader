@@ -38,20 +38,20 @@ def apply_global_filters(df: pd.DataFrame, monitors) -> pd.DataFrame:
 def verify_log_monitors(df: pd.DataFrame) -> dict:
     df_columns = df.columns.to_list()
     monitors = {
-        'af_ratio': ['AF Sens 1 Ratio (AFR)'],
-        'af_comm': ['Comm Fuel Final (AFR)'],
-        'af_corr': ['AF Correction 1 (%)'],
-        'af_learn': ['AF Learning 1 (%)'],
-        'oil_temp': ['Oil Temp (F)'],
-        'acc_pos': ['Accel. Position (%)', 'Accel Position (%)'],
-        'fk': ['Feedback Knock (°)', 'Feedback Knock (degrees)'],
-        'fkl': ['Fine Knock Learn (°)', 'Fine Knock Learn (degrees)'],
-        'dam': ['Dyn. Adv. Mult (DAM)', 'Dyn Adv Mult (value)'],
-        'cyl1_rough': ['Roughness Cyl 1 (count)', 'Roughness Cyl 1 (misfire count)'],
-        'cyl2_rough': ['Roughness Cyl 2 (count)', 'Roughness Cyl 2 (misfire count)'],
-        'cyl3_rough': ['Roughness Cyl 3 (count)', 'Roughness Cyl 3 (misfire count)'],
-        'cyl4_rough': ['Roughness Cyl 4 (count)', 'Roughness Cyl 4 (misfire count)'],
-        'closed_loop': ['Closed Loop Sw. (on/off)', 'Closed Loop Sw (status)'],
+        'af_ratio': ('AF Sens 1 Ratio (AFR)'),
+        'af_comm': ('Comm Fuel Final (AFR)'),
+        'af_corr': ('AF Correction 1 (%)'),
+        'af_learn': ('AF Learning 1 (%)'),
+        'oil_temp': ('Oil Temp (F)'),
+        'acc_pos': ('Accel. Position (%)', 'Accel Position (%)'),
+        'fk': ('Feedback Knock (°)', 'Feedback Knock (degrees)'),
+        'fkl': ('Fine Knock Learn (°)', 'Fine Knock Learn (degrees)'),
+        'dam': ('Dyn. Adv. Mult (DAM)', 'Dyn Adv Mult (value)'),
+        'cyl1_rough': ('Roughness Cyl 1 (count)', 'Roughness Cyl 1 (misfire count)'),
+        'cyl2_rough': ('Roughness Cyl 2 (count)', 'Roughness Cyl 2 (misfire count)'),
+        'cyl3_rough': ('Roughness Cyl 3 (count)', 'Roughness Cyl 3 (misfire count)'),
+        'cyl4_rough': ('Roughness Cyl 4 (count)', 'Roughness Cyl 4 (misfire count)'),
+        'closed_loop': ('Closed Loop Sw. (on/off)', 'Closed Loop Sw (status)'),
 }
     for k in monitors:
         for item in monitors[k]:
