@@ -9,7 +9,7 @@ from typing import Union
 PLOT_GRAPH = True
 
 # Initial log filters
-ACC_POS = 100  # In percent
+ACC_POS = 0  # In percent
 
 # Monitor condition variables
 FK_TRESHOLD = -2  # In degrees. The more negative, the more timing retarded.
@@ -121,14 +121,21 @@ class MonitorConditions:
         if PLOT_GRAPH:
             plt.figure(figsize=(20, 5))
             ax = plt.gca()
-            self.df.plot(kind='line',x=self.mon['rpm'],y=self.mon['boost_actual'],ax=ax)
+            self.df.plot(kind='line',x=self.mon['rpm'],y=self.mon['boost_actual'], color='blue', ax=ax)
             self.df.plot(kind='line',x=self.mon['rpm'],y=self.mon['boost_target'], color='red', ax=ax)
             plt.show()
 
             plt.figure(figsize=(20, 5))
             ax = plt.gca()
-            self.df.plot(kind='line',x=self.mon['rpm'],y=self.mon['af_ratio'],ax=ax)
+            self.df.plot(kind='line',x=self.mon['rpm'],y=self.mon['af_ratio'], color='blue', ax=ax)
             self.df.plot(kind='line',x=self.mon['rpm'],y=self.mon['af_comm'], color='red', ax=ax)
+            plt.show()
+
+            plt.figure(figsize=(20, 5))
+            ax = plt.gca()
+            self.df.plot(kind='line',x=self.mon['time'],y=self.mon['dam'], color='red', ax=ax)
+            self.df.plot(kind='line',x=self.mon['time'],y=self.mon['fk'], color='blue', ax=ax)
+            self.df.plot(kind='line',x=self.mon['time'],y=self.mon['fkl'], color='green', ax=ax)
             plt.show()
 
 
