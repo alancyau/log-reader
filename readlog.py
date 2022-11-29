@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import sys
 from collections import Counter
-from dataclasses import dataclass
 from typing import Union
 
 
@@ -39,8 +38,8 @@ def verify_log_monitors(df: pd.DataFrame) -> dict:
         'af_comm': ('Comm Fuel Final (AFR)'),
         'af_corr': ('AF Correction 1 (%)'),
         'af_learn': ('AF Learning 1 (%)'),
-        'boost_actual':('Boost (psi)'),
-        'boost_target':('Target Boost Final Rel SL (psi)', 'Target Boost Final Rel. SL (psi)'),
+        'boost_actual':('Boost (psi)', 'Boost Extended (psi)'),
+        'boost_target':('Target Boost Final Rel SL (psi)', 'Target Boost Final Rel. SL (psi)', 'Target Boost Table Rel. SL Ext. (psi)'),
         'oil_temp': ('Oil Temp (F)'),
         'acc_pos': ('Accel. Position (%)', 'Accel Position (%)'),
         'fk': ('Feedback Knock (°)', 'Feedback Knock (degrees)'),
@@ -112,8 +111,11 @@ class MonitorConditions:
         return True if dam_list[-1] < DAM_TRESHOLD else False
     
     def oil_temp_exceed(self) -> bool:
-        oil_temps = self.df[self.mon['oil_temp']].to_list()
-        return True if any(item >= OIL_TEMP_TRESHOLD for item in oil_temps) else False
+        try:
+            oil_temps = self.df[self.mon['oil_temp']].to_list()
+            return True if any(item >= OIL_TEMP_TRESHOLD for item in oil_temps) else False
+        except: 
+            print('Unable to determine oil temp')
 
     def plot_graph(self) -> None:
         if PLOT_GRAPH:
@@ -131,8 +133,7 @@ class MonitorConditions:
 
 
 def main() -> None:
-    #file = sys.argv[1]
-    df = load_csv('datalog20.csv')
+    df = load_csv(sys.argv[1])
     verified_monitors = verify_log_monitors(df)
     df = apply_global_filters(df, verified_monitors)
     conditions = MonitorConditions(df, verified_monitors)
@@ -147,6 +148,7 @@ def main() -> None:
     if conditions.status_af: print(f'AF actual vs command diffference exceeded {AF_THRESHOLD}')
     
     conditions.plot_graph()
+
 
 if __name__ == "__main__":
     main()
