@@ -7,9 +7,9 @@ from dataclasses import dataclass
 from typing import Union
 
 
+PLOT_GRAPH = True
+
 # Initial log filters
-VA_CLOSED_LOOP = 'on'
-VB_CLOSED_LOOP = 1
 ACC_POS = 100  # In percent
 
 # Monitor condition variables
@@ -28,13 +28,7 @@ def load_csv(file: str) -> pd.DataFrame:
 
 
 def apply_global_filters(df: pd.DataFrame, monitors) -> pd.DataFrame:
-    df_acc = df[df[monitors['acc_pos']] >= ACC_POS]
-    df_cl = df_acc[df_acc[monitors['closed_loop']] == VA_CLOSED_LOOP]
-    if len(df_cl):
-        return df_cl
-    else: 
-        df_cl = df_acc[df_acc[monitors['closed_loop']] == VB_CLOSED_LOOP]
-        return df_cl
+    return df[df[monitors['acc_pos']] >= ACC_POS]
 
     
 def verify_log_monitors(df: pd.DataFrame) -> dict:
@@ -82,28 +76,12 @@ class MonitorConditions:
     def af_command_vs_actual(self):
         self.df['AF Difference'] = abs(self.df[self.mon['af_ratio']] - self.df[self.mon['af_comm']])
         af_diff = self.df['AF Difference'].to_list()
-        
-        if any(item >= AF_THRESHOLD for item in af_diff):
-            ax = plt.gca()
-            self.df.plot(kind='line',x=self.mon['time'],y=self.mon['af_ratio'],ax=ax)
-            self.df.plot(kind='line',x=self.mon['time'],y=self.mon['af_comm'], color='red', ax=ax)
-            plt.show()
-            return True
-        else:
-            return False
+        return True if any(item >= AF_THRESHOLD for item in af_diff) else False
 
     def boost_command_vs_actual(self):
         self.df['Boost Difference'] = abs(self.df[self.mon['boost_target']] - self.df[self.mon['boost_actual']])
         boost_diff = self.df['Boost Difference'].to_list()
-        
-        if any(item >= BOOST_THRESHOLD for item in boost_diff):
-            ax = plt.gca()
-            self.df.plot(kind='line',x=self.mon['time'],y=self.mon['boost_actual'],ax=ax)
-            self.df.plot(kind='line',x=self.mon['time'],y=self.mon['boost_target'], color='red', ax=ax)
-            plt.show()
-            return True
-        else:
-            return False
+        return True if any(item >= BOOST_THRESHOLD for item in boost_diff) else False
 
     def cylinder_misfire(self) -> tuple:
         cyl1 = self.df[self.mon['cyl1_rough']].to_list()
@@ -137,10 +115,24 @@ class MonitorConditions:
         oil_temps = self.df[self.mon['oil_temp']].to_list()
         return True if any(item >= OIL_TEMP_TRESHOLD for item in oil_temps) else False
 
+    def plot_graph(self) -> None:
+        if PLOT_GRAPH:
+            plt.figure(figsize=(20, 5))
+            ax = plt.gca()
+            self.df.plot(kind='line',x=self.mon['rpm'],y=self.mon['boost_actual'],ax=ax)
+            self.df.plot(kind='line',x=self.mon['rpm'],y=self.mon['boost_target'], color='red', ax=ax)
+            plt.show()
+
+            plt.figure(figsize=(20, 5))
+            ax = plt.gca()
+            self.df.plot(kind='line',x=self.mon['rpm'],y=self.mon['af_ratio'],ax=ax)
+            self.df.plot(kind='line',x=self.mon['rpm'],y=self.mon['af_comm'], color='red', ax=ax)
+            plt.show()
+
 
 def main() -> None:
     #file = sys.argv[1]
-    df = load_csv('22.csv')
+    df = load_csv('datalog20.csv')
     verified_monitors = verify_log_monitors(df)
     df = apply_global_filters(df, verified_monitors)
     conditions = MonitorConditions(df, verified_monitors)
@@ -154,6 +146,7 @@ def main() -> None:
     if conditions.status_oil_temp: print(f'Oil temp exceeded {OIL_TEMP_TRESHOLD}')
     if conditions.status_af: print(f'AF actual vs command diffference exceeded {AF_THRESHOLD}')
     
+    conditions.plot_graph()
 
 if __name__ == "__main__":
     main()
