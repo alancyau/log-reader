@@ -140,8 +140,10 @@ class MonitorConditions:
 
             plt.figure(figsize=(20, 5))
             ax = plt.gca()
-            self.df.plot(kind='line',x=self.mon['time'],y=self.mon['af_corr'], color='blue', ax=ax)
-            self.df.plot(kind='line',x=self.mon['time'],y=self.mon['af_learn'], color='green', ax=ax)
+            self.df.plot(kind='line',x=self.mon['rpm'],y=self.mon['af_corr'], color='blue', ax=ax)
+            self.df.plot(kind='line',x=self.mon['rpm'],y=self.mon['af_learn'], color='green', ax=ax)
+            self.df.plot(kind='line',x=self.mon['rpm'],y=['AF Actual Correction (%)'], color='red', ax=ax)
+
             plt.show()
 
 
