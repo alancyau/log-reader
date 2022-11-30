@@ -138,6 +138,12 @@ class MonitorConditions:
             self.df.plot(kind='line',x=self.mon['time'],y=self.mon['fkl'], color='green', ax=ax)
             plt.show()
 
+            plt.figure(figsize=(20, 5))
+            ax = plt.gca()
+            self.df.plot(kind='line',x=self.mon['time'],y=self.mon['af_corr'], color='blue', ax=ax)
+            self.df.plot(kind='line',x=self.mon['time'],y=self.mon['af_learn'], color='green', ax=ax)
+            plt.show()
+
 
 def main() -> None:
     df = load_csv(sys.argv[1])
