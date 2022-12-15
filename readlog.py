@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-import matplotlib.pyplot as plt
-import pandas as pd
 import sys
 from collections import Counter
 from typing import Union
+import matplotlib.pyplot as plt
+import pandas as pd
 
 
 PLOT_GRAPH = True
@@ -58,7 +58,6 @@ def verify_log_monitors(df: pd.DataFrame) -> dict:
                 monitors[k] = item
     return monitors
 
-
 class MonitorConditions:
     def __init__(self, df: pd.DataFrame, monitors) -> None:
         self.df = df
@@ -111,11 +110,8 @@ class MonitorConditions:
         return True if dam_list[-1] < DAM_TRESHOLD else False
     
     def oil_temp_exceed(self) -> bool:
-        try:
-            oil_temps = self.df[self.mon['oil_temp']].to_list()
-            return True if any(item >= OIL_TEMP_TRESHOLD for item in oil_temps) else False
-        except: 
-            print('Unable to determine oil temp')
+        oil_temps = self.df[self.mon['oil_temp']].to_list()
+        return True if any(item >= OIL_TEMP_TRESHOLD for item in oil_temps) else False
 
     def plot_graph(self) -> None:
         if PLOT_GRAPH:
